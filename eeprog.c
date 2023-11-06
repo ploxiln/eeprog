@@ -97,7 +97,11 @@ void parse_arg(char *arg, int* paddr, int *psize)
 		*psize = strtoul(++end, 0, 0);
 }
 
-int confirm_action()
+// write mode reads data from stdin, in which case prompting
+// to confirm just eats a byte of the intended data to write
+#define WITH_PROMPT 1
+#define SKIP_PROMPT 0
+int confirm_action(int prompt)
 {
 	fprintf(stderr,
 	"\n"
@@ -112,10 +116,15 @@ int confirm_action()
 	"\n"
 	"Use -f to disable this warning message\n"
 	"\n"
-	"Press ENTER to continue or hit CTRL-C to exit\n"
-	"\n"
 	);
-	getchar();
+	if (prompt)
+	{
+		fprintf(stderr,
+		"Press ENTER to continue or hit CTRL-C to exit\n"
+		"\n"
+		);
+		getchar();
+	}
 	return 1;
 }
 
@@ -253,7 +262,7 @@ int main(int argc, char** argv)
 	{
 	case 'r':
 		if(force == 0)
-			confirm_action();
+			confirm_action(WITH_PROMPT);
 		size = 1; // default
 		parse_arg(arg, &memaddr, &size);
 		print_info("  Reading %d bytes from 0x%x\n", size, memaddr);
@@ -261,7 +270,7 @@ int main(int argc, char** argv)
 		break;
 	case 'w':
 		if(force == 0)
-			confirm_action();
+			confirm_action(SKIP_PROMPT); // data to write is read from stdin
 		parse_arg(arg, &memaddr, &size);
 		print_info("  Writing stdin starting at address 0x%x with timeout %dms\n",
 			memaddr, timeout);
